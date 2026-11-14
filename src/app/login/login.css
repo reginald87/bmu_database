@@ -1,0 +1,253 @@
+/* Login / setup / activation screens, scoped to .loginpage */
+.loginpage {
+  --login-plum: #783c69;
+  --login-ink: #17212b;
+  --login-muted: #66737c;
+  --login-line: #e3e8eb;
+  --login-lime: #a2e83b;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: #f5f7f8;
+  color: var(--login-ink);
+  font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+}
+.loginpage * {
+  box-sizing: border-box;
+}
+.loginpage .story {
+  background: linear-gradient(145deg, #71365f, #803e70 60%, #673052);
+  color: white;
+  padding: 7vw 7.5vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.loginpage .story::after {
+  content: "";
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  border: 1px solid #ffffff1d;
+  border-radius: 50%;
+  right: -190px;
+  bottom: -160px;
+  box-shadow: 0 0 0 45px #ffffff09, 0 0 0 90px #ffffff07;
+}
+.loginpage .brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  position: relative;
+  z-index: 1;
+}
+.loginpage .brand img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: white;
+}
+.loginpage .brand b {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+.loginpage .brand small {
+  display: block;
+  font-size: 9px;
+  opacity: 0.73;
+  letter-spacing: 0.12em;
+  margin-top: 4px;
+}
+.loginpage .storycopy {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
+  margin: 80px 0;
+}
+.loginpage .storycopy .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #d4ef9a;
+  font-size: 10px;
+  font-weight: 800;
+}
+.loginpage .storycopy h1 {
+  font-size: clamp(30px, 4vw, 54px);
+  letter-spacing: -0.045em;
+  line-height: 1.07;
+  margin: 15px 0;
+}
+.loginpage .storycopy p {
+  color: #f2e7ee;
+  font-size: 13px;
+  max-width: 350px;
+}
+.loginpage .campuses {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+.loginpage .campuses span {
+  font-size: 9px;
+  padding: 6px 9px;
+  border: 1px solid #ffffff38;
+  border-radius: 30px;
+}
+.loginpage .storyfoot {
+  font-size: 9px;
+  color: #e8d9e4;
+  position: relative;
+  z-index: 1;
+}
+.loginpage .formside {
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+.loginpage .panel {
+  width: min(390px, 100%);
+}
+.loginpage .panel h2 {
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  margin: 0 0 5px;
+}
+.loginpage .sub {
+  font-size: 11px;
+  color: var(--login-muted);
+  margin-bottom: 24px;
+}
+.loginpage .field {
+  margin: 13px 0;
+}
+.loginpage .field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.loginpage .field input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--login-line);
+  border-radius: 7px;
+  background: white;
+  padding: 0 11px;
+  font: 12px system-ui;
+  outline: none;
+}
+.loginpage .password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.loginpage .password-wrapper input {
+  padding-right: 40px;
+}
+.loginpage .password-toggle {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.loginpage .password-toggle:hover {
+  opacity: 1;
+}
+.loginpage .field input:focus {
+  border-color: #a47b9b;
+  box-shadow: 0 0 0 3px #783c6917;
+}
+.loginpage .submit {
+  height: 42px;
+  width: 100%;
+  background: var(--login-plum);
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 750;
+  font-size: 11px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+.loginpage .submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.loginpage .error {
+  color: #a13b36;
+  font-size: 10px;
+  min-height: 18px;
+  margin-top: 10px;
+}
+.loginpage .notice {
+  margin-top: 18px;
+  padding: 10px;
+  background: #f6f7f8;
+  border-radius: 7px;
+  color: #707a82;
+  font-size: 9px;
+}
+.loginpage .mode {
+  display: inline-flex;
+  border-radius: 5px;
+  background: #f4f0f3;
+  color: var(--login-plum);
+  font-size: 9px;
+  padding: 4px 7px;
+  font-weight: 750;
+  margin-bottom: 13px;
+}
+@media (max-width: 760px) {
+  .loginpage {
+    grid-template-columns: 1fr;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  .loginpage .story {
+    padding: 18px 20px;
+    min-height: 180px;
+    flex-shrink: 0;
+  }
+  .loginpage .storycopy {
+    margin: 24px 0 12px;
+  }
+  .loginpage .storycopy h1 {
+    font-size: 24px;
+  }
+  .loginpage .storycopy p,
+  .loginpage .campuses,
+  .loginpage .storyfoot {
+    display: none;
+  }
+  .loginpage .brand img {
+    width: 42px;
+    height: 42px;
+  }
+  .loginpage .formside {
+    padding: 24px 20px;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .loginpage .panel {
+    margin: auto;
+  }
+  .loginpage .story::after {
+    width: 200px;
+    height: 200px;
+    right: -100px;
+    bottom: -120px;
+  }
+}

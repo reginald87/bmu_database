@@ -1,0 +1,211 @@
+// BMU Registry System - SQLite schema for local development.
+// Production should move to PostgreSQL; array-like fields are stored as JSON strings
+// so the same application code works on both engines.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model Campus {
+  id        String   @id
+  name      String
+  location  String
+  people    Person[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id              String    @id @default(cuid())
+  username        String    @unique
+  email           String?   @unique
+  displayName     String
+  role            String
+  campuses        String    @default("[]")
+  passwordHash    String?
+  salt            String?
+  inviteTokenHash String?
+  inviteExpiresAt DateTime?
+  active          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  sessions        Session[]
+
+  @@index([role, active])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csrfToken String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AcademicSession {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  startDate   String?
+  endDate     String?
+  isCurrent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isCurrent])
+}
+
+model Person {
+  id             String  @id @default(cuid())
+  universityId   String  @unique
+  bimsNumber     String? @unique
+  firstName      String
+  middleName     String?
+  lastName       String
+  preferredName  String?
+  email          String?
+  phone          String?
+  dateOfBirth    String?
+  gender         String?
+  nationality    String?
+  address        String?
+  city           String?
+  lga            String?
+  state          String?
+  emergencyContact      String?
+  emergencyName         String?
+  emergencyRelationship String?
+  emergencyPhone        String?
+  emergencyEmail        String?
+  nextOfKin             String?
+  guardianName          String?
+  guardianRelationship  String?
+  guardianPhone         String?
+  guardianEmail         String?
+  campusId       String
+  campus         Campus @relation(fields: [campusId], references: [id])
+  recordType     String
+  status         String  @default("Needs review")
+  completeness   Int     @default(70)
+  photo          String?
+
+  // Student fields
+  programme            String?
+  faculty              String?
+  department           String?
+  currentLevel         String?
+  programmeLevel       String?
+  admissionSession     String?
+  entryRoute           String?
+  admissionDate        String?
+  enrollmentStatus     String?
+  previousInstitution  String?
+  priorQualification   String?
+  priorYearCompleted   String?
+
+  // Staff fields
+  staffCategory           String?
+  jobTitle                String?
+  appointmentType         String?
+  employmentType          String?
+  salaryGrade             String?
+  appointmentDate         String?
+  employmentStatus        String?
+  gradeLevel              String?
+  highestQualification    String?
+  qualificationField      String?
+  qualificationInstitution String?
+  qualificationYear       String?
+  professionalBody        String?
+  professionalBodies      String  @default("[]")
+  professionalRegistration String?
+  supervisor              String?
+
+  education  String @default("[]")
+  history    String @default("[]")
+
+  documents   Document[]
+  reviewItems ReviewItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([campusId, status])
+}
+
+model Document {
+  id             String  @id @default(cuid())
+  personId       String
+  person         Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  title          String
+  filename       String
+  classification String
+  type           String
+  mimeType       String
+  size           String
+  sizeBytes      Int     @default(0)
+  storageKey     String? @unique
+  scanStatus     String?
+  scanner        String?
+  scannedAt      String?
+  expiryDate     String?
+  added          String
+  createdAt      DateTime @default(now())
+
+  @@index([personId])
+}
+
+model ReviewItem {
+  id        String   @id @default(cuid())
+  personId  String?
+  person    Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
+  name      String
+  recordId  String
+  group     String
+  issue     String
+  campusId  String
+  submitted String
+  priority  String   @default("Normal")
+  createdAt DateTime @default(now())
+
+  @@index([campusId])
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  action    String
+  record    String
+  actor     String
+  campusId  String?
+  when      String
+  ref       String?
+  createdAt DateTime @default(now())
+
+  @@index([campusId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  roles     String   @default("[]")
+  campusId  String?
+  title     String
+  message   String
+  href      String?
+  readBy    String   @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
