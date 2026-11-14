@@ -34,14 +34,40 @@ Target URL for this deployment: **https://bmuregistry.bmu.edu.ng**
    - Then add `bmuregistry.bmu.edu.ng` in **cPanel → Domains → Create A New Domain**.
    - If cPanel does not allow the subdomain because `bmu.edu.ng` is not hosted on the account, ask the hosting provider to add it as a subdomain/addon domain first.
 
-3. **Cloudflare:** if `bmu.edu.ng` uses Cloudflare, start with the DNS record set to **DNS only** (grey cloud) so AutoSSL can validate the domain. After HTTPS works directly on the server, you can enable the proxy. If you enable Cloudflare SSL, use **Full (strict)** with a valid certificate on the origin.
+3. **Cloudflare DNS and proxy:**
+   - In **Cloudflare → DNS → Records**, add an `A` record:
+     - Name: `bmuregistry`
+     - IPv4 address: your cPanel server's public IP
+     - Proxy status: **DNS only** (grey cloud) for the first certificate setup
+   - Then add `bmuregistry.bmu.edu.ng` in **cPanel → Domains → Create A New Domain** so cPanel and Passenger know about the hostname.
+   - Run AutoSSL first (next step) while the record is grey-clouded. AutoSSL HTTP validation usually fails while the record is proxied.
 
 4. **SSL certificate:**
    - Open **cPanel → SSL/TLS Status** and run **AutoSSL** for `bmuregistry.bmu.edu.ng`.
    - Confirm `https://bmuregistry.bmu.edu.ng` loads without a certificate warning.
    - Production session cookies are `Secure`, so the app must be served over HTTPS for login to work.
 
-5. Set `APP_URL="https://bmuregistry.bmu.edu.ng"` in the Node.js app environment variables later. Invitation emails use this value.
+5. **Choose the Cloudflare proxy mode:**
+   - **Option A — DNS only (simplest for shared hosting):** leave the record grey-clouded. Cloudflare provides DNS, and cPanel AutoSSL renews normally. You do not get Cloudflare's WAF/CDN proxy.
+   - **Option B — Proxied (orange cloud):** recommended if you want Cloudflare protection. Install a **Cloudflare Origin CA certificate** on the origin before enabling the proxy:
+     1. Cloudflare → **SSL/TLS → Origin Server → Create Certificate**.
+     2. Hostnames: `bmuregistry.bmu.edu.ng` (add `*.bmu.edu.ng` only if you need other subdomains).
+     3. Copy the certificate and private key.
+     4. cPanel → **SSL/TLS → Install an SSL Website** → paste the certificate and private key for `bmuregistry.bmu.edu.ng`.
+     5. Cloudflare → **SSL/TLS → Overview** → set encryption mode to **Full (strict)**.
+     6. Change the DNS record to **Proxied** (orange cloud).
+   - Do **not** use Cloudflare **Flexible** SSL. It causes redirect loops and leaves the origin connection unencrypted.
+   - If you keep AutoSSL instead of an Origin CA certificate, AutoSSL renewals may fail while the record is proxied. Temporarily set the record to DNS only during renewal, or install the Origin CA certificate.
+
+6. **Recommended Cloudflare settings for this app:**
+   - **SSL/TLS → Overview:** Full (strict)
+   - **SSL/TLS → Edge Certificates:** Always Use HTTPS **ON**, Automatic HTTPS Rewrites **ON**, Minimum TLS 1.2+, TLS 1.3 **ON**
+   - **Speed → Optimization:** Rocket Loader **OFF** (it can break Next.js hydration)
+   - **Caching → Cache Rules:** bypass cache for `/api/*` and `/setup`; the app already sends `Cache-Control: no-store`, but an explicit bypass rule is safer
+   - **Security → Bots:** if Bot Fight Mode blocks login or API POST requests, disable it for this hostname or add a WAF skip rule for `/api/*`
+   - Leave **Under Attack Mode** off during normal use
+
+7. Set `APP_URL="https://bmuregistry.bmu.edu.ng"` in the Node.js app environment variables later. Invitation emails use this value.
 
 ---
 
@@ -266,6 +292,12 @@ Do not run `npm run db:seed` on a database that already contains records you wan
 | --- | --- |
 | 503 or "Application failed to start" | Node version is 20.9+, Application startup file is `server.js`, `npm run build` has been run, and the app error log |
 | Subdomain shows a default page, directory listing, or 404 | Confirm the subdomain exists in cPanel, its DNS `A` record points to this server, the Node.js **Application URL** is `bmuregistry.bmu.edu.ng`, and the application root matches the cloned repository |
+| Cloudflare 521 / 522 | Cloudflare cannot reach the origin. Confirm the Node.js app is running, the DNS record points to the correct server IP, and the host firewall allows Cloudflare's IP ranges |
+| Cloudflare 525 / 526 | Origin HTTPS certificate is invalid or incomplete for Full (strict). Re-run AutoSSL or install a Cloudflare Origin CA certificate in cPanel |
+| Cloudflare redirect loop | Cloudflare SSL mode is likely **Flexible**. Change it to **Full (strict)** and confirm the origin serves HTTPS |
+| Login appears to succeed but redirects back to login | Confirm `APP_URL=https://bmuregistry.bmu.edu.ng`, HTTPS is active, and Cloudflare is not stripping cookies. Production cookies are `Secure` |
+| UI loads but buttons/forms fail under Cloudflare | Turn off **Rocket Loader** and check Bot Fight Mode/WAF challenges for `/api/*` |
+| AutoSSL renewal fails while proxied | Install a Cloudflare Origin CA certificate, or temporarily set the record to DNS only during renewal |
 | `Cannot find module '.next/...'` | Run `npm run build` in the application root |
 | Prisma `P1001` / can't reach database | `DATABASE_URL` host `localhost`, port `3306`, full cPanel DB/user names, URL-encoded password, user has All Privileges |
 | Prisma `P1000` authentication failed | Database user/password mismatch or URL encoding issue |
