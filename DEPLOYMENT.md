@@ -14,8 +14,34 @@ The application is still a fictional-data demo. Review the security notes in `RE
 
 > Replace these placeholders throughout:
 > - `CPANELUSER` — your cPanel username
-> - `example.com` — your real domain or subdomain
 > - `bmu_registry` — the folder name you choose for the app
+
+Target URL for this deployment: **https://bmuregistry.bmu.edu.ng**
+
+---
+
+## 0. Create the subdomain, DNS, and SSL
+
+1. **If cPanel manages DNS for `bmu.edu.ng`:**
+   - Open **cPanel → Domains → Create A New Domain**.
+   - Enter `bmuregistry.bmu.edu.ng`.
+   - cPanel will create a document root such as `/home/CPANELUSER/bmuregistry.bmu.edu.ng`.
+   - Do not upload the application into that document root; the Node.js app will use `/home/CPANELUSER/bmu_registry` as its application root.
+
+2. **If DNS is managed elsewhere (registrar, Cloudflare, university DNS team):**
+   - Ask the DNS administrator to create an `A` record: `bmuregistry` → the cPanel server's IPv4 address.
+   - Add an `AAAA` record only if the server has a stable IPv6 address.
+   - Then add `bmuregistry.bmu.edu.ng` in **cPanel → Domains → Create A New Domain**.
+   - If cPanel does not allow the subdomain because `bmu.edu.ng` is not hosted on the account, ask the hosting provider to add it as a subdomain/addon domain first.
+
+3. **Cloudflare:** if `bmu.edu.ng` uses Cloudflare, start with the DNS record set to **DNS only** (grey cloud) so AutoSSL can validate the domain. After HTTPS works directly on the server, you can enable the proxy. If you enable Cloudflare SSL, use **Full (strict)** with a valid certificate on the origin.
+
+4. **SSL certificate:**
+   - Open **cPanel → SSL/TLS Status** and run **AutoSSL** for `bmuregistry.bmu.edu.ng`.
+   - Confirm `https://bmuregistry.bmu.edu.ng` loads without a certificate warning.
+   - Production session cookies are `Secure`, so the app must be served over HTTPS for login to work.
+
+5. Set `APP_URL="https://bmuregistry.bmu.edu.ng"` in the Node.js app environment variables later. Invitation emails use this value.
 
 ---
 
@@ -72,7 +98,7 @@ For later pulls, use the cPanel Git UI or provide credentials through your SSH a
    - **Node.js version**: 20.9+ (prefer 22.x)
    - **Application mode**: Production
    - **Application root**: `bmu_registry`
-   - **Application URL**: your domain or subdomain, for example `https://example.com`
+   - **Application URL**: your domain or subdomain, for example `https://bmuregistry.bmu.edu.ng`
    - **Application startup file**: `server.js`
 4. Click **Create**.
 
@@ -91,7 +117,7 @@ In **Setup Node.js App → your application → Environment variables**, add:
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | `mysql://CPANELUSER_bmu_user:PASSWORD@localhost:3306/CPANELUSER_bmu_registry?connection_limit=5` |
 | `SESSION_SECRET` | 64 random hex characters |
-| `APP_URL` | `https://example.com` |
+| `APP_URL` | `https://bmuregistry.bmu.edu.ng` |
 | `BMU_BOOTSTRAP_TOKEN` | a strong one-time setup token |
 | `BMU_ALLOW_UNSCANNED_UPLOADS` | `true` only for a fictional demo without ClamAV; otherwise `false` |
 | `GMAIL_USER` | optional, for invitation email |
@@ -183,7 +209,7 @@ Check the application's error log (often `stderr.log` in the application root) i
 
 ## 9. Complete first-run setup
 
-1. Open `https://example.com/setup`.
+1. Open `https://bmuregistry.bmu.edu.ng/setup`.
 2. Enter the `BMU_BOOTSTRAP_TOKEN` value and create the first **System administrator** with a password of at least 12 characters.
 3. Sign in.
 4. Go back to **Setup Node.js App → Environment variables** and remove `BMU_BOOTSTRAP_TOKEN`.
@@ -207,7 +233,7 @@ touch storage/.write-test quarantine/.write-test
 rm storage/.write-test quarantine/.write-test
 ```
 
-- Confirm users cannot browse to `https://example.com/storage/...` or `https://example.com/quarantine/...`. Keep the app root outside `public_html` whenever possible.
+- Confirm users cannot browse to `https://bmuregistry.bmu.edu.ng/storage/...` or `https://bmuregistry.bmu.edu.ng/quarantine/...`. Keep the app root outside `public_html` whenever possible.
 - Use HTTPS. In production, session cookies are `Secure`; login will not persist over plain HTTP.
 
 ---
@@ -239,6 +265,7 @@ Do not run `npm run db:seed` on a database that already contains records you wan
 | Symptom | Check |
 | --- | --- |
 | 503 or "Application failed to start" | Node version is 20.9+, Application startup file is `server.js`, `npm run build` has been run, and the app error log |
+| Subdomain shows a default page, directory listing, or 404 | Confirm the subdomain exists in cPanel, its DNS `A` record points to this server, the Node.js **Application URL** is `bmuregistry.bmu.edu.ng`, and the application root matches the cloned repository |
 | `Cannot find module '.next/...'` | Run `npm run build` in the application root |
 | Prisma `P1001` / can't reach database | `DATABASE_URL` host `localhost`, port `3306`, full cPanel DB/user names, URL-encoded password, user has All Privileges |
 | Prisma `P1000` authentication failed | Database user/password mismatch or URL encoding issue |
