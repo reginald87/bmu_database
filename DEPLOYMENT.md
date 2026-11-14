@@ -160,6 +160,8 @@ Set `BMU_BOOTSTRAP_TOKEN` before seeding so you can read it from the cPanel dash
 
 Do not add `PORT`; cPanel/Passenger sets it. Click **Save**, then restart the application if cPanel offers a restart action.
 
+cPanel's environment variables are available to the Node.js application, but not automatically to a Terminal shell. For Terminal commands, create `/home/CPANELUSER/bmu_registry/.env` with at least `DATABASE_URL` and `BMU_BOOTSTRAP_TOKEN`, or export them before running Prisma/Next.js commands. The file is gitignored; never commit it.
+
 ---
 
 ## 5. Install dependencies
