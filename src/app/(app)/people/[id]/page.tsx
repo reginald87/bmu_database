@@ -107,7 +107,7 @@ export default function PersonPage() {
     setUploadError('');
     try {
       const data = await fileToBase64(uploadFile);
-      await api(`/people/${id}/documents`, {
+      const doc = await api<{ scanStatus: string }>(`/people/${id}/documents`, {
         method: 'POST',
         body: {
           filename: uploadFile.name,
@@ -117,7 +117,7 @@ export default function PersonPage() {
           data,
         },
       });
-      toast('Document scanned and added.');
+      toast(doc.scanStatus === 'Clean' ? 'Document scanned and added.' : 'Document added. Malware scanning is not configured on this server.');
       setUploadOpen(false);
       setUploadFile(null);
       setUploadTitle('');
@@ -455,7 +455,7 @@ export default function PersonPage() {
         onSaved={(updated) => { setPerson(updated); setEditOpen(false); }}
       />
 
-      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Attach document" hint="Files are signature-checked and scanned before being accepted.">
+      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Attach document" hint="Files are signature-checked and scanned when a malware scanner is configured on the server.">
         <form onSubmit={uploadDocument}>
           <div className="formfields">
             <label className="wide">Title

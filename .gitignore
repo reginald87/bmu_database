@@ -10,9 +10,11 @@ data/*.json
 data/*.tmp
 storage/*
 !storage/.gitkeep
+!storage/.htaccess
 prisma/*.db
 prisma/*.db-journal
 *.log
 
 quarantine/*
 !quarantine/.gitkeep
+!quarantine/.htaccess

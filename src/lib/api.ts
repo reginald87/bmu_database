@@ -97,6 +97,7 @@ async function notify(input: { roles?: string[]; campusId?: string | null; userI
       title: input.title,
       message: input.message,
       href: input.href ?? null,
+      readBy: '[]',
     },
   });
 }
@@ -274,7 +275,16 @@ async function currentDefenderPath(): Promise<string | null> {
   try { await access(fallback); return fallback; } catch { return null; }
 }
 
-async function scanFile(filePath: string): Promise<{ scanner: string; output: string }> {
+type ScanResult = { scanner: string; output: string; status: 'Clean' | 'Skipped' };
+
+async function scanFile(filePath: string): Promise<ScanResult> {
+  if ((process.env.BMU_ALLOW_UNSCANNED_UPLOADS || '').toLowerCase() === 'true') {
+    return {
+      scanner: 'Not configured',
+      output: 'Malware scanning is disabled by BMU_ALLOW_UNSCANNED_UPLOADS.',
+      status: 'Skipped',
+    };
+  }
   let command: string | null;
   let args: string[];
   if (process.platform === 'win32') {
@@ -290,6 +300,7 @@ async function scanFile(filePath: string): Promise<{ scanner: string; output: st
     return {
       scanner: process.platform === 'win32' ? 'Microsoft Defender Antivirus' : 'ClamAV',
       output: `${result.stdout}\n${result.stderr}`.slice(0, 2000),
+      status: 'Clean',
     };
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { killed?: boolean; signal?: string };
@@ -999,7 +1010,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       const key = `${id}.${kind.type.toLowerCase()}`;
       const quarantinePath = path.join(QUARANTINE_DIR, key);
       await writeFile(quarantinePath, bytes, { flag: 'wx' });
-      let scan: { scanner: string; output: string };
+      let scan: ScanResult;
       try {
         scan = await scanFile(quarantinePath);
       } catch (error) {
@@ -1017,7 +1028,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
         data: {
           id, personId: person.id, title, filename, classification, type: kind.type, mimeType: kind.mime,
           size: `${Math.ceil(bytes.length / 1024)} KB`, sizeBytes: bytes.length, storageKey: key,
-          scanStatus: 'Clean', scanner: scan.scanner, scannedAt: nowLabel(),
+          scanStatus: scan.status, scanner: scan.scanner, scannedAt: nowLabel(),
           expiryDate: cleanString(input.expiryDate, 20) || null, added: nowLabel(),
         },
         include: { person: true },
@@ -1025,7 +1036,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       const history = parseJsonArray<string>(person.history);
       history.unshift(`Document added · ${user.displayName} · ${nowLabel()}`);
       await prisma.person.update({ where: { id: person.id }, data: { history: JSON.stringify(history) } });
-      await auditEvent('Document added', person, user.displayName);
+      await auditEvent(scan.status === 'Clean' ? 'Document added' : 'Document added without malware scan', person, user.displayName);
       return json(documentToApi(doc), 201);
     }
 

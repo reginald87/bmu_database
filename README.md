@@ -9,7 +9,7 @@ Build a secure, maintainable university records management system for Bayelsa Me
 
 The system will manage student records, academic and non-academic staff records, and scanned documents attached to a person's record. Use the approved visual prototype as the starting point. The UI should feel academic, calm, minimal, accessible, and dependable, with BMU's crest and plum, lime, white, and navy accents.
 
-This repository currently contains a local fictional-data demo with persistent record workflows, sign-in, initial server-enforced role/campus permissions, invite-based account activation, private document storage, upload malware scanning, notifications, and an initial relational schema proposal. Treat the demo as an implementation starting point, not as a production-ready records system. Do not import or create real BMU personal data until the security foundation has been reviewed and the system is deployed appropriately.
+This repository currently contains a fictional-data demo with persistent record workflows, sign-in, server-enforced role/campus permissions, invite-based account activation, private document storage, optional upload malware scanning, notifications, and a MySQL relational schema with an initial migration. Treat the demo as an implementation starting point, not as a production-ready records system. Do not import or create real BMU personal data until the security foundation has been reviewed and the system is deployed appropriately.
 
 ## Instructions for the coding agent
 
@@ -32,25 +32,29 @@ This repository currently contains a local fictional-data demo with persistent r
 - `src/components/` — shared shell, dialogs, tables, bulk import, person wizard, and UI primitives
 - `src/lib/` — API routes, Prisma access, session/auth, validation, mailer, and shared types
 - `public/crest.png` — BMU crest supplied for the prototype
-- `prisma/schema.prisma` — SQLite schema used by the running app; seed with `npm run db:seed`
+- `prisma/schema.prisma` — MySQL schema used by the app; initial migration in `prisma/migrations/`
+- `server.js` — Node entry point for `npm start` and cPanel/Passenger
+- `DEPLOYMENT.md` — cPanel + MySQL deployment guide
 - `design-reference/bmu-rms-prototype.html` — original clickable visual concept
 - `storage/` — private document bytes, kept outside the public web directory and ignored by Git
 - `quarantine/` — temporary upload holding area used before scanning, ignored by Git
 
-Start the app from the project folder with:
+Start the app locally from the project folder with Node 20.9+ and a MySQL/MariaDB database:
 
 ```powershell
 npm install
-npx prisma db push
+npm run db:deploy
 npm run db:seed
 npm run dev
 ```
 
-Then open <http://localhost:3000>. The seeded demo uses fictional sample data in SQLite. On first launch without a seeded account, a one-time bootstrap token is printed to the server terminal; use it to create the first system administrator and choose a strong unique password. Do not share or commit the token.
+Create the database first and point `DATABASE_URL` at it (copy `.env.example` to `.env`). Then open <http://localhost:3000>. The seeded demo uses fictional sample data in MySQL. On first launch without a seeded account, a one-time bootstrap token is printed to the server terminal; use it to create the first system administrator and choose a strong unique password. Do not share or commit the token.
 
-Administrators can invite accounts; the one-time activation token is shown once and expires after 48 hours. Roles and campus scope are enforced by the server. Passwords use Node scrypt; cookie sessions expire after eight hours and mutations require same-origin and CSRF checks. `storage/` is private and outside the public web directory; uploads are checked for file signatures and size, quarantined, scanned, and only then moved to storage. On Windows the app invokes Microsoft Defender; on other systems configure `BMU_CLAMSCAN_PATH` to a ClamAV scanner. A scan error rejects the upload.
+Administrators can invite accounts; the one-time activation token is shown once and expires after 48 hours. Roles and campus scope are enforced by the server. Passwords use Node scrypt; cookie sessions expire after eight hours and mutations require same-origin and CSRF checks. `storage/` is private and outside the public web directory; uploads are checked for file signatures and size, quarantined, scanned when a scanner is available, and only then moved to storage. On Windows the app invokes Microsoft Defender; on Linux configure `BMU_CLAMSCAN_PATH` to a ClamAV scanner. A scan error rejects the upload. For a fictional demo on shared hosting without ClamAV, `BMU_ALLOW_UNSCANNED_UPLOADS=true` allows uploads but records `Skipped` scan status and an audit event. Do not use that setting with real data.
 
-Optional Gmail SMTP invitations use `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM_NAME`, and `APP_URL`; see `.env.example`. When SMTP is not configured, invitation links are still returned so an administrator can share them manually. This local demo is not production-ready: it lacks MFA, durable production database/session storage, managed secrets, operational monitoring, policy decisions, and independent security review. Use fictional records and files only.
+For cPanel shared hosting with Node.js and MySQL, follow [DEPLOYMENT.md](DEPLOYMENT.md). Next.js 16 requires Node 20.9 or newer.
+
+Optional Gmail SMTP invitations use `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MAIL_FROM_NAME`, and `APP_URL`; see `.env.example`. When SMTP is not configured, invitation links are still returned so an administrator can share them manually. This demo is not production-ready: it lacks MFA, managed secrets, operational monitoring, policy decisions, and independent security review. Use fictional records and files only.
 
 ## Record validation and bulk import
 
@@ -155,7 +159,7 @@ The following items are intentionally not yet implemented in the local demo and 
 - **Accessibility** — Dialogs lack focus trapping; some controls lack ARIA labels and visible focus states.
 - **Document preview/audit** — Downloads are served, but replacement and removal events need explicit audit coverage.
 - **MFA** — Multi-factor authentication is not implemented (acknowledged in README as not production-ready).
-- **PostgreSQL/Prisma connection** — The Prisma schema is a planning artifact; the demo uses in-memory JSON persistence.
+- **Shared-hosting malware scanning** — cPanel shared hosting usually has no ClamAV. The demo can skip scanning with `BMU_ALLOW_UNSCANNED_UPLOADS=true`, but that is not acceptable for real documents.
 
 ## First OpenCode task
 

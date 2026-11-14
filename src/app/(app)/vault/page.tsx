@@ -96,11 +96,11 @@ export default function VaultPage() {
     setUploadError('');
     try {
       const data = await fileToBase64(file);
-      await api(`/people/${personId}/documents`, {
+      const doc = await api<{ scanStatus: string }>(`/people/${personId}/documents`, {
         method: 'POST',
         body: { filename: file.name, title: effectiveTitle || 'Other', classification: fileClassification, expiryDate: expiry, data },
       });
-      toast('Document scanned and added.');
+      toast(doc.scanStatus === 'Clean' ? 'Document scanned and added.' : 'Document added. Malware scanning is not configured on this server.');
       setUploadOpen(false);
       setFile(null);
       setTitle('');
@@ -127,7 +127,7 @@ export default function VaultPage() {
       <article className="card storage">
         <div className="storage-head"><span>Repository storage</span><span className="muted">{formatBytes(totalBytes)} used</span></div>
         <div className="bar"><i style={{ width: `${storagePercent}%`, background: 'var(--navy)' }} /></div>
-        <div className="tiny muted" style={{ marginTop: 5 }}>Files are scanned and stored locally for this workspace.</div>
+        <div className="tiny muted" style={{ marginTop: 5 }}>Files are stored privately; malware scanning depends on the server configuration.</div>
       </article>
 
       <div className="foldergrid">
@@ -206,7 +206,7 @@ export default function VaultPage() {
         <div className="tablefoot"><span>Showing {filtered.length} files</span><span>File access is permission-controlled</span></div>
       </article>
 
-      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload document" hint="Choose the linked record and a supported file. The file is scanned before acceptance.">
+      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload document" hint="Choose the linked record and a supported file. The file is scanned when a malware scanner is configured on the server.">
         <form onSubmit={upload}>
           <div className="formfields">
             <label className="wide">Linked record

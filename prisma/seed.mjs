@@ -115,7 +115,14 @@ async function main() {
 
   for (const person of [...students, ...staff]) {
     const { history, ...rest } = person;
-    await prisma.person.create({ data: { ...rest, history: JSON.stringify(history ?? []) } });
+    await prisma.person.create({
+      data: {
+        ...rest,
+        professionalBodies: JSON.stringify(person.professionalBodies ?? []),
+        education: JSON.stringify(person.education ?? []),
+        history: JSON.stringify(history ?? []),
+      },
+    });
   }
 
   const peopleByRecord = new Map((await prisma.person.findMany()).map((person) => [person.universityId, person]));

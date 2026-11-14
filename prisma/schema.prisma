@@ -1,19 +1,19 @@
-// BMU Registry System - SQLite schema for local development.
-// Production should move to PostgreSQL; array-like fields are stored as JSON strings
-// so the same application code works on both engines.
+// BMU Registry System - MySQL schema for cPanel/shared hosting.
+// Array-like fields are stored as JSON strings so the application code stays portable.
+// Long free-text fields use @db.Text because MySQL VARCHAR defaults to 191 characters.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model Setting {
   key   String @id
-  value String
+  value String @db.Text
 }
 
 model Campus {
@@ -55,34 +55,34 @@ model Session {
 }
 
 model AcademicSession {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  startDate   String?
-  endDate     String?
-  isCurrent   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  startDate String?
+  endDate   String?
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isCurrent])
 }
 
 model Person {
-  id             String  @id @default(cuid())
-  universityId   String  @unique
-  bimsNumber     String? @unique
-  firstName      String
-  middleName     String?
-  lastName       String
-  preferredName  String?
-  email          String?
-  phone          String?
-  dateOfBirth    String?
-  gender         String?
-  nationality    String?
-  address        String?
-  city           String?
-  lga            String?
-  state          String?
+  id                    String  @id @default(cuid())
+  universityId          String  @unique
+  bimsNumber            String? @unique
+  firstName             String
+  middleName            String?
+  lastName              String
+  preferredName         String?
+  email                 String?
+  phone                 String?
+  dateOfBirth           String?
+  gender                String?
+  nationality           String?
+  address               String? @db.Text
+  city                  String?
+  lga                   String?
+  state                 String?
   emergencyContact      String?
   emergencyName         String?
   emergencyRelationship String?
@@ -93,47 +93,47 @@ model Person {
   guardianRelationship  String?
   guardianPhone         String?
   guardianEmail         String?
-  campusId       String
-  campus         Campus @relation(fields: [campusId], references: [id])
-  recordType     String
-  status         String  @default("Needs review")
-  completeness   Int     @default(70)
-  photo          String?
+  campusId              String
+  campus                Campus  @relation(fields: [campusId], references: [id])
+  recordType            String
+  status                String  @default("Needs review")
+  completeness          Int     @default(70)
+  photo                 String? @db.LongText
 
   // Student fields
-  programme            String?
-  faculty              String?
-  department           String?
-  currentLevel         String?
-  programmeLevel       String?
-  admissionSession     String?
-  entryRoute           String?
-  admissionDate        String?
-  enrollmentStatus     String?
-  previousInstitution  String?
-  priorQualification   String?
-  priorYearCompleted   String?
+  programme           String?
+  faculty             String?
+  department          String?
+  currentLevel        String?
+  programmeLevel      String?
+  admissionSession    String?
+  entryRoute          String?
+  admissionDate       String?
+  enrollmentStatus    String?
+  previousInstitution String?
+  priorQualification  String?
+  priorYearCompleted  String?
 
   // Staff fields
-  staffCategory           String?
-  jobTitle                String?
-  appointmentType         String?
-  employmentType          String?
-  salaryGrade             String?
-  appointmentDate         String?
-  employmentStatus        String?
-  gradeLevel              String?
-  highestQualification    String?
-  qualificationField      String?
+  staffCategory            String?
+  jobTitle                 String?
+  appointmentType          String?
+  employmentType           String?
+  salaryGrade              String?
+  appointmentDate          String?
+  employmentStatus         String?
+  gradeLevel               String?
+  highestQualification     String?
+  qualificationField       String?
   qualificationInstitution String?
-  qualificationYear       String?
-  professionalBody        String?
-  professionalBodies      String  @default("[]")
+  qualificationYear        String?
+  professionalBody         String?
+  professionalBodies       String  @db.Text
   professionalRegistration String?
-  supervisor              String?
+  supervisor               String?
 
-  education  String @default("[]")
-  history    String @default("[]")
+  education String @db.Text
+  history   String @db.Text
 
   documents   Document[]
   reviewItems ReviewItem[]
@@ -146,17 +146,17 @@ model Person {
 }
 
 model Document {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   personId       String
-  person         Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  person         Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
   title          String
   filename       String
   classification String
   type           String
   mimeType       String
   size           String
-  sizeBytes      Int     @default(0)
-  storageKey     String? @unique
+  sizeBytes      Int      @default(0)
+  storageKey     String?  @unique
   scanStatus     String?
   scanner        String?
   scannedAt      String?
@@ -174,7 +174,7 @@ model ReviewItem {
   name      String
   recordId  String
   group     String
-  issue     String
+  issue     String   @db.Text
   campusId  String
   submitted String
   priority  String   @default("Normal")
@@ -186,7 +186,7 @@ model ReviewItem {
 model AuditEvent {
   id        String   @id @default(cuid())
   action    String
-  record    String
+  record    String   @db.Text
   actor     String
   campusId  String?
   when      String
@@ -202,7 +202,7 @@ model Notification {
   roles     String   @default("[]")
   campusId  String?
   title     String
-  message   String
+  message   String   @db.Text
   href      String?
   readBy    String   @default("[]")
   createdAt DateTime @default(now())
