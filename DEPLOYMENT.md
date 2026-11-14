@@ -103,6 +103,8 @@ The repository is public, so this clone needs no credentials. If it is made priv
 - **Deploy key:** add an SSH public key to **GitHub → repository → Settings → Deploy keys**, then clone with:
   `git@github.com:reginald87/bmu_database.git`
 
+> The clone path must match the Node.js **Application root**. Do not clone into the subdomain document root (for example `/home/CPANELUSER/bmuregistry.bmu.edu.ng`); keep the app in a separate directory such as `/home/CPANELUSER/bmu_registry`.
+
 Do not paste a token into source files, README, or commits. If you use a token in the clone URL, change the remote after cloning so the token is not stored in `.git/config`:
 
 ```bash
