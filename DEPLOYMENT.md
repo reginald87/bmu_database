@@ -96,11 +96,11 @@ If the password contains characters such as `@`, `:`, `/`, `#`, or `?`, URL-enco
 4. **Repository Path**: `/home/CPANELUSER/bmu_registry`
 5. Click **Create**.
 
-The repository is private. If the clone fails, use one of these options:
+The repository is public, so this clone needs no credentials. If it is made private later, use one of these options:
 
 - **Fine-grained personal access token (PAT):** create a GitHub PAT with read-only **Contents** access to `reginald87/bmu_database`, then clone with:
   `https://YOUR_TOKEN@github.com/reginald87/bmu_database.git`
-- **Deploy key (better):** add an SSH public key to **GitHub → repository → Settings → Deploy keys**, then clone with:
+- **Deploy key:** add an SSH public key to **GitHub → repository → Settings → Deploy keys**, then clone with:
   `git@github.com:reginald87/bmu_database.git`
 
 Do not paste a token into source files, README, or commits. If you use a token in the clone URL, change the remote after cloning so the token is not stored in `.git/config`:
@@ -110,7 +110,7 @@ cd /home/CPANELUSER/bmu_registry
 git remote set-url origin https://github.com/reginald87/bmu_database.git
 ```
 
-For later pulls, use the cPanel Git UI or provide credentials through your SSH agent/deploy key.
+For later pulls with a public repo, use the cPanel Git UI or run `git pull`. Because the repository is public, never commit `.env`, database exports, uploaded documents, or real BMU personal data.
 
 > Keep the app outside `public_html` when possible. `storage/` and `quarantine/` contain private files. The repository includes `.htaccess` deny rules for those folders, but the strongest protection is to keep the application root outside the web root.
 
@@ -306,4 +306,4 @@ Do not run `npm run db:seed` on a database that already contains records you wan
 | Login succeeds but session does not persist | Use HTTPS and `NODE_ENV=production`; `Secure` cookies are not sent over HTTP |
 | Document upload returns 503 | No malware scanner. Install/configure ClamAV and set `BMU_CLAMSCAN_PATH`, or set `BMU_ALLOW_UNSCANNED_UPLOADS=true` for a fictional demo only |
 | Build runs out of memory | `NODE_OPTIONS=--max-old-space-size=1024 npm run build` |
-| Git pull asks for credentials | Use a GitHub deploy key or a read-only PAT through the cPanel Git UI; avoid committing tokens |
+| Git pull asks for credentials | The repository should be public. If it was made private, use a GitHub deploy key or a read-only PAT through the cPanel Git UI; avoid committing tokens |
