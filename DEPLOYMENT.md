@@ -209,18 +209,19 @@ If you use an existing MySQL database with tables already created by `prisma db 
 
 ## 7. Build the application
 
+Type checking is skipped inside `next build` because the CloudLinux LVE thread limit aborts the build when Next spawns a separate Node process for it. Run it as its own step, then build with a single worker and a small thread pool:
+
 ```bash
 cd /home/CPANELUSER/bmu_registry
-npm run build
-```
-
-If the build is killed for memory, retry with:
-
-```bash
-NODE_OPTIONS=--max-old-space-size=1024 npm run build
+npm run typecheck
+UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024 --v8-pool-size=1" npm run build
 ```
 
 The build writes `.next/` in the application root. Passenger runs `server.js`, which serves the built application.
+
+To restore in-build type checking on a host without a low thread limit, remove `typescript.ignoreBuildErrors` from `next.config.ts`.
+
+If a failed build leaves a partial `.next/`, run the build again until it completes before restarting the app.
 
 ---
 
@@ -310,4 +311,5 @@ Do not run `npm run db:seed` on a database that already contains records you wan
 | Login succeeds but session does not persist | Use HTTPS and `NODE_ENV=production`; `Secure` cookies are not sent over HTTP |
 | Document upload returns 503 | No malware scanner. Install/configure ClamAV and set `BMU_CLAMSCAN_PATH`, or set `BMU_ALLOW_UNSCANNED_UPLOADS=true` for a fictional demo only |
 | Build runs out of memory | `NODE_OPTIONS=--max-old-space-size=1024 npm run build` |
+| Build aborts with `Assertion failed: (0) == uv_thread_create(...)` in `WorkerThreadsTaskRunner` | CloudLinux LVE thread limit. `next.config.ts` now skips in-build type checking and pins `cpus: 1`. Build with `UV_THREADPOOL_SIZE=1 NODE_OPTIONS="--max-old-space-size=1024 --v8-pool-size=1" npm run build`, and run `npm run typecheck` separately |
 | Git pull asks for credentials | The repository should be public. If it was made private, use a GitHub deploy key or a read-only PAT through the cPanel Git UI; avoid committing tokens |
