@@ -10,8 +10,8 @@ import {
   hasValidCsrf, hashPassword, sameOrigin, safeEqual, serializeUser, verifyPassword,
 } from './auth';
 import {
-  CAMPUSES, ROLES, ROLE_LABELS, can, campusName, isRole, parseCampuses, serializeCampuses,
-  type Capability, type SessionUser,
+  ALL_CAMPUSES, CAMPUSES, ROLES, ROLE_LABELS, can, campusName, isRole, parseCampuses, serializeCampuses,
+  validCampusScope, type Capability, type SessionUser,
 } from './roles';
 import { invitationLink, mailerAddress, mailerConfigured, sendInvitationEmail, sendTestEmail } from './mailer';
 import {
@@ -462,8 +462,9 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       const email = cleanString(input.email, 160).toLowerCase();
       const displayName = cleanString(input.displayName, 100);
       const role = cleanString(input.role, 30);
-      const assignedCampuses = Array.isArray(input.campuses) ? input.campuses.filter((c): c is string => typeof c === 'string' && validCampus(c)) : [];
-      if (!/^[a-z0-9._-]{3,40}$/.test(username) || !displayName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !isRole(role) || role === 'system-admin' || !assignedCampuses.length) {
+      const assignedCampuses = Array.isArray(input.campuses) ? input.campuses.filter((c): c is string => typeof c === 'string' && validCampusScope(c)) : [];
+      const campusScope = assignedCampuses.includes(ALL_CAMPUSES) ? [ALL_CAMPUSES] : assignedCampuses;
+      if (!/^[a-z0-9._-]{3,40}$/.test(username) || !displayName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !isRole(role) || role === 'system-admin' || !campusScope.length) {
         return json({ error: 'Provide a username, full name, valid email address, an allowed role, and at least one campus.' }, 400);
       }
       if (await prisma.user.findUnique({ where: { username } })) return json({ error: 'That username is already in use.' }, 409);
@@ -471,7 +472,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       const invitationToken = randomBytes(32).toString('base64url');
       const created = await prisma.user.create({
         data: {
-          username, email, displayName, role, campuses: serializeCampuses(assignedCampuses), active: false,
+          username, email, displayName, role, campuses: serializeCampuses(campusScope), active: false,
           inviteTokenHash: createHash('sha256').update(invitationToken).digest('hex'),
           inviteExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
         },
@@ -479,7 +480,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       await prisma.auditEvent.create({
         data: {
           action: 'User invitation created', record: `${displayName} · ${role}`, actor: user.displayName,
-          campusId: assignedCampuses.length === 1 ? assignedCampuses[0] : null, when: nowLabel(), ref: username,
+          campusId: campusScope.length === 1 && campusScope[0] !== ALL_CAMPUSES ? campusScope[0] : null, when: nowLabel(), ref: username,
         },
       });
       const mail = await sendInvitationEmail({
@@ -535,19 +536,25 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
         }
         data.email = email || null;
       }
-      if (typeof input.role === 'string' && isRole(input.role) && input.role !== 'system-admin') data.role = input.role;
+      if (typeof input.role === 'string' && isRole(input.role) && input.role !== 'system-admin') {
+        if (target.id === user.id) {
+          return json({ error: 'You cannot change your own role. Ask another system administrator to do it.' }, 400);
+        }
+        data.role = input.role;
+      }
       if (Array.isArray(input.campuses)) {
-        const scope = input.campuses.filter((c): c is string => typeof c === 'string' && validCampus(c));
+        const scope = input.campuses.filter((c): c is string => typeof c === 'string' && validCampusScope(c));
         if (!scope.length) return json({ error: 'A user must have at least one valid campus.' }, 400);
-        data.campuses = serializeCampuses(scope);
+        data.campuses = serializeCampuses(scope.includes(ALL_CAMPUSES) ? [ALL_CAMPUSES] : scope);
       }
       const updated = await prisma.user.update({ where: { id: target.id }, data });
+      const updatedScope = parseCampuses(updated.campuses);
       await prisma.auditEvent.create({
         data: {
           action: 'User access changed',
           record: `${updated.displayName} · ${updated.role}${updated.active ? ' · active' : ' · inactive'}`,
           actor: user.displayName,
-          campusId: parseCampuses(updated.campuses).length === 1 ? parseCampuses(updated.campuses)[0] : null,
+          campusId: updatedScope.length === 1 && updatedScope[0] !== ALL_CAMPUSES ? updatedScope[0] : null,
           when: nowLabel(), ref: updated.username,
         },
       });
@@ -906,7 +913,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
         imported += 1;
       }
       await notify({
-        roles: ['system-admin', category === 'student' ? 'registry-officer' : 'hr-officer'],
+        roles: ['system-admin', 'admin', category === 'student' ? 'registry-officer' : 'hr-officer'],
         title: 'Bulk import completed', message: `${imported} ${category} records were imported and queued for review.`,
       });
       return json({ imported }, 201);
@@ -1124,7 +1131,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
       });
       await auditEvent('Record created', created, user.displayName);
       await notify({
-        roles: ['system-admin', category === 'student' ? 'registry-officer' : 'hr-officer'],
+        roles: ['system-admin', 'admin', category === 'student' ? 'registry-officer' : 'hr-officer'],
         campusId: created.campusId, title: 'Record created',
         message: `A new ${category} record for ${created.firstName} ${created.lastName} is awaiting verification.`,
       });
@@ -1156,7 +1163,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
         const updated = await prisma.person.update({ where: { id: person.id }, data: { status, history: JSON.stringify(history) } });
         await auditEvent(action === 'approve' ? 'Verified' : 'Changes requested', updated, user.displayName);
         await notify({
-          roles: ['system-admin', isStudent ? 'registry-officer' : 'hr-officer'],
+          roles: ['system-admin', 'admin', isStudent ? 'registry-officer' : 'hr-officer'],
           campusId: item.campusId, title: 'Review completed',
           message: `Review for ${person.firstName} ${person.lastName} was updated.`,
         });
@@ -1175,7 +1182,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
     }
 
     if (route === '/academic-sessions' && method === 'POST') {
-      if (!can(user, 'users')) return deny();
+      if (!can(user, 'manageSessions')) return deny();
       const input = await readJson(request);
       const name = cleanString(input.name, 60);
       const startDate = cleanString(input.startDate, 20);
@@ -1204,7 +1211,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
 
     const sessionMatch = route.match(/^\/academic-sessions\/([\w-]+)$/);
     if (sessionMatch && method === 'PATCH') {
-      if (!can(user, 'users')) return deny();
+      if (!can(user, 'manageSessions')) return deny();
       const target = await prisma.academicSession.findUnique({ where: { id: sessionMatch[1] } });
       if (!target) return json({ error: 'Session not found.' }, 404);
       const input = await readJson(request);
@@ -1238,7 +1245,7 @@ export async function handleApi(request: Request, segments: string[]): Promise<R
     }
 
     if (sessionMatch && method === 'DELETE') {
-      if (!can(user, 'users')) return deny();
+      if (!can(user, 'manageSessions')) return deny();
       const target = await prisma.academicSession.findUnique({ where: { id: sessionMatch[1] } });
       if (!target) return json({ error: 'Session not found.' }, 404);
       await prisma.academicSession.delete({ where: { id: target.id } });

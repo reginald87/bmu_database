@@ -1,5 +1,6 @@
 export type Role =
   | 'system-admin'
+  | 'admin'
   | 'registry-officer'
   | 'faculty-officer'
   | 'hr-officer'
@@ -18,13 +19,19 @@ export type Capability =
   | 'reviewStaff'
   | 'audit'
   | 'users'
+  | 'manageSessions'
   | 'summary';
 
 export const ROLES: Record<Role, Capability[]> = {
   'system-admin': [
     'readStudents', 'writeStudents', 'readStaff', 'writeStaff',
     'readStudentDocuments', 'writeStudentDocuments', 'readStaffDocuments', 'writeStaffDocuments',
-    'reviewStudents', 'reviewStaff', 'audit', 'users', 'summary',
+    'reviewStudents', 'reviewStaff', 'audit', 'users', 'manageSessions', 'summary',
+  ],
+  'admin': [
+    'readStudents', 'writeStudents', 'readStaff', 'writeStaff',
+    'readStudentDocuments', 'writeStudentDocuments', 'readStaffDocuments', 'writeStaffDocuments',
+    'reviewStudents', 'reviewStaff', 'audit', 'manageSessions', 'summary',
   ],
   'registry-officer': [
     'readStudents', 'writeStudents', 'readStudentDocuments', 'writeStudentDocuments',
@@ -43,12 +50,28 @@ export const CAMPUSES = [
   { id: 'sampou', name: 'Sampou', location: 'Kolokuma/Opokuma LGA, Bayelsa State' },
 ] as const;
 
+export const ALL_CAMPUSES = '*';
+
+export function validCampusScope(value: string): boolean {
+  return value === ALL_CAMPUSES || CAMPUSES.some((campus) => campus.id === value);
+}
+
 export const ROLE_LABELS: Record<Role, string> = {
   'system-admin': 'System administrator',
+  'admin': 'Administrator',
   'registry-officer': 'Registry officer',
   'faculty-officer': 'Faculty officer',
   'hr-officer': 'HR officer',
   auditor: 'Auditor',
+};
+
+export const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  'system-admin': 'Full access to every record, plus user accounts, invitations and workspace settings.',
+  'admin': 'Manages both student and staff records, documents, reviews and the audit trail. Cannot invite users or change workspace settings.',
+  'registry-officer': 'Manages student records, student documents and student reviews only.',
+  'faculty-officer': 'Read-only access to student records and student documents.',
+  'hr-officer': 'Manages staff records, staff documents and staff reviews only.',
+  'auditor': 'Read-only access to student and staff records, plus the audit trail.',
 };
 
 export type SessionUser = {

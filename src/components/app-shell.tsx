@@ -25,8 +25,9 @@ const NAV: NavItem[] = [
   { href: '/review', label: 'Review queue', icon: '◷', capability: 'reviewStudents', metric: 'pending', admin: true },
   { href: '/reports', label: 'Reports', icon: '▥', capability: 'summary', admin: true },
   { href: '/audit', label: 'Audit trail', icon: '◉', capability: 'audit', admin: true },
-  { href: '/settings', label: 'Workspace settings', icon: '⚙', admin: true },
-  { href: '/sessions', label: 'Academic sessions', icon: '◷', capability: 'users', admin: true },
+  { href: '/sessions', label: 'Academic sessions', icon: '◷', capability: 'manageSessions', admin: true },
+  { href: '/settings', label: 'Workspace settings', icon: '⚙', capability: 'users', admin: true },
+  { href: '/account', label: 'Account & security', icon: '⚿' },
 ];
 
 const CRUMBS: Array<[RegExp, string]> = [
@@ -39,6 +40,7 @@ const CRUMBS: Array<[RegExp, string]> = [
   [/^\/audit/, 'Audit trail'],
   [/^\/settings/, 'Workspace settings'],
   [/^\/sessions/, 'Academic sessions'],
+  [/^\/account/, 'Account & security'],
   [/^\/search/, 'Search results'],
   [/^\/people/, 'Person profile'],
 ];
@@ -436,7 +438,7 @@ function Shell({ user, csrfToken, children }: { user: SessionUser; csrfToken: st
               <div className="card panel" style={{ position: 'absolute', right: 0, top: 44, width: 240, zIndex: 20 }}>
                 <div className="paneltop"><h2>{user.displayName}</h2></div>
                 <div className="tiny muted" style={{ marginBottom: 8 }}>{ROLE_LABELS[user.role]}</div>
-                <button className="btn subtle" type="button" style={{ width: '100%', marginBottom: 6 }} onClick={() => router.push('/settings')}>
+                <button className="btn subtle" type="button" style={{ width: '100%', marginBottom: 6 }} onClick={() => router.push('/account')}>
                   Account &amp; security
                 </button>
                 <button className="btn" type="button" style={{ width: '100%' }} onClick={signOut}>Sign out</button>

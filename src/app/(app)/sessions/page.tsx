@@ -13,7 +13,7 @@ export default function SessionsPage() {
   const user = useSessionUser();
   const toast = useToast();
   const confirm = useConfirm();
-  const writable = can(user, 'users');
+  const writable = can(user, 'manageSessions');
 
   const [rows, setRows] = useState<AcademicSessionRow[]>([]);
   const [loading, setLoading] = useState(true);

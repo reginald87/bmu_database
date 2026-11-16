@@ -85,6 +85,7 @@ Student university IDs accept `UG/00/0000` or a 14-character JAMB registration n
 Design role-based authorization for at least:
 
 - System administrator
+- Administrator
 - Registry officer
 - Faculty/department records officer
 - Human resources officer
@@ -96,13 +97,16 @@ Apply least privilege, campus and record scope where appropriate, and separate H
 
 | Role | Implemented access |
 | --- | --- |
-| System administrator | Read/write students and staff, student/staff documents, reviews, audit, user accounts; campus scope applies. |
+| System administrator (super admin) | Read/write students and staff, student/staff documents, reviews, audit, user accounts and invitations, academic sessions, full backup; campus scope applies. |
+| Administrator | Read/write students and staff, student/staff documents, reviews, audit, academic sessions; campus scope applies. No access to workspace settings or user accounts, so it cannot invite or deactivate users. |
 | Registry officer | Read/write students, student documents, student reviews, audit; campus scope applies. |
 | Faculty officer | Read students and student documents in assigned campuses; read-only. |
 | HR officer | Read/write staff, staff documents, staff reviews, audit; campus scope applies. |
 | Auditor | Read student/staff directory fields and audit in assigned campuses; no document download or writes. |
 
 These are demo defaults. Confirm them with BMU before production. Browser controls are for usability; API authorization is enforced server-side.
+
+Campus scope applies to every role. A user is assigned one or both campuses, or "all campuses" for university-wide access. An Administrator scoped to one campus manages only that campus's students and staff.
 ## Data and security principles
 
 - Treat student and staff records as sensitive personal information. Minimize fields and collect only those BMU has approved for a defined purpose.
